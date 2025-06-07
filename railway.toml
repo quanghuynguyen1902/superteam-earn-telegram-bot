@@ -1,0 +1,21 @@
+[build]
+builder = "nixpacks"
+
+[deploy]
+healthcheckPath = "/health"
+healthcheckTimeout = 100
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 10
+
+[[services]]
+name = "telegram-bot"
+
+[services.variables]
+NODE_ENV = "production"
+PORT = "3000"
+
+[services.healthcheck]
+path = "/health"
+interval = 30
+timeout = 10
+retries = 3

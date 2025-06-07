@@ -1,0 +1,67 @@
+// Simplified Bot PostgreSQL Schema
+// Focused only on essential notification functionality
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/bot-client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("BOT_DATABASE_URL")
+}
+
+// Users who have interacted with the bot
+model User {
+  id           String   @id @default(uuid())
+  telegramId   String   @unique
+  earnUserId   String?  // Link to Earn user for eligibility checks
+  geography    String?  // User's location for geography filtering
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relationships
+  preferences   UserPreferences?
+  notifications NotificationLog[]
+
+  @@index([telegramId])
+  @@index([earnUserId])
+  @@index([isActive])
+}
+
+// Simple notification preferences
+model UserPreferences {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Basic toggles
+  notifyBounties  Boolean  @default(true)
+  notifyProjects  Boolean  @default(true)
+
+  // USD filters
+  minUsdValue     Float?
+  maxUsdValue     Float?
+
+  // Skills (stored as simple string array from Earn)
+  skills          String[] @default([])
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// Track sent notifications to prevent duplicates
+model NotificationLog {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listingId String   // Earn listing ID
+  sentAt    DateTime @default(now())
+
+  @@unique([userId, listingId])
+  @@index([userId])
+  @@index([listingId])
+}
