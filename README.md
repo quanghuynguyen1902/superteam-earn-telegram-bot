@@ -133,11 +133,6 @@ https://www.youtube.com/watch?v=k96zsb9BAA0
 /setgeo Global          # For worldwide opportunities
 ```
 
-## API Endpoints
-
-### Health Check
-- `GET /health` - Application health status
-
 ## Database Architecture
 
 The bot uses a sophisticated dual-database architecture designed for optimal performance and data separation:
@@ -363,11 +358,6 @@ BotCommands
 
 ## Monitoring
 
-### Health Checks
-- `/health` endpoint for uptime monitoring
-- Database connection status
-- Telegram API connectivity
-
 ### Logging
 - Structured logging with Winston
 - Error tracking and alerting
@@ -384,13 +374,6 @@ BotCommands
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Support
-
-For support, please contact:
-- Create an issue in this repository
-- Join our Telegram support group: [Link]
-- Email: support@superteam.fun
 
 ---
 
