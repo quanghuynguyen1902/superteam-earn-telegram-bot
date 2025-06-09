@@ -1,7 +1,8 @@
 import { Telegraf, Markup } from 'telegraf';
 import { BotContext } from '../index';
-import { UserPreferencesModel } from '../../db/models/user';
+import { UserModel, UserPreferencesModel } from '../../db/models/user';
 import { logger } from '../../utils/logger';
+import { Region } from '../../types';
 
 export const setupPreferencesCommands = (bot: Telegraf<BotContext>): void => {
   // Main preferences command
@@ -43,8 +44,8 @@ export const setupPreferencesCommands = (bot: Telegraf<BotContext>): void => {
       const currentPrefs = await UserPreferencesModel.findByUserId(ctx.userId);
       await UserPreferencesModel.upsert(ctx.userId, {
         ...currentPrefs,
-        min_usd_value: minValue === 0 ? undefined : minValue,
-        max_usd_value: maxValue === 0 ? undefined : maxValue,
+        minUsdValue: minValue === 0 ? undefined : minValue,
+        maxUsdValue: maxValue === 0 ? undefined : maxValue,
       });
 
       if (minValue === 0) {
@@ -95,34 +96,51 @@ export const setupPreferencesCommands = (bot: Telegraf<BotContext>): void => {
 
   // Geography setting
   bot.command('setgeo', async (ctx) => {
-    const args = ctx.message.text.split(' ').slice(1);
-    
-    if (args.length === 0) {
-      await ctx.reply(
-        '*Set Geography Filter*\n\n' +
-        'Usage: `/setgeo [location]`\n\n' +
-        'Examples:\n' +
-        '• `/setgeo India`\n' +
-        '• `/setgeo "United States"`\n' +
-        '• `/setgeo global` - for global opportunities only',
-        { parse_mode: 'Markdown' }
-      );
+    if (!ctx.telegramId) {
+      await ctx.reply('❌ User not found.');
       return;
     }
 
-    const geography = args.join(' ');
+    const regions = Object.values(Region);
+    const buttons = [];
+    
+    // Create rows of 3 buttons each
+    for (let i = 0; i < regions.length; i += 3) {
+      const row = [];
+      for (let j = 0; j < 3 && i + j < regions.length; j++) {
+        const region = regions[i + j];
+        row.push(Markup.button.callback(region, `setgeo_${region}`));
+      }
+      buttons.push(row);
+    }
+
+    const keyboard = Markup.inlineKeyboard(buttons);
+
+    await ctx.reply(
+      `🌍 *Select Your Region:*\n\nChoose your region to receive relevant local opportunities plus all global listings.`,
+      {
+        parse_mode: 'Markdown',
+        ...keyboard
+      }
+    );
+  });
+
+  // Handle setgeo callbacks
+  bot.action(/^setgeo_/, async (ctx) => {
+    const region = (ctx.callbackQuery as any).data.replace('setgeo_', '');
+    
+    if (!ctx.telegramId) {
+      await ctx.answerCbQuery('❌ User not found.');
+      return;
+    }
 
     try {
-      if (!ctx.userId) {
-        await ctx.reply('❌ User not found.');
-        return;
-      }
-
-      // This would be handled by the User model, but for now just acknowledge
-      await ctx.reply(`✅ Geography set to: ${geography}`);
+      await UserModel.updateGeography(ctx.telegramId, region);
+      await ctx.editMessageText(`✅ Your region has been updated to: ${region}\n\nYou'll now receive notifications for opportunities in ${region} and global listings.`);
+      await ctx.answerCbQuery();
     } catch (error) {
-      logger.error('Error setting geography', error);
-      await ctx.reply('❌ Failed to update geography. Please try again.');
+      logger.error('Error updating geography', error);
+      await ctx.answerCbQuery('❌ Failed to update region. Please try again.');
     }
   });
 
@@ -156,8 +174,8 @@ export const setupPreferencesCommands = (bot: Telegraf<BotContext>): void => {
       const currentPrefs = await UserPreferencesModel.findByUserId(ctx.userId);
       await UserPreferencesModel.upsert(ctx.userId, {
         ...currentPrefs,
-        notify_bounties: notifyBounties,
-        notify_projects: notifyProjects,
+        notifyBounties: notifyBounties,
+        notifyProjects: notifyProjects,
       });
 
       let message = '✅ Notification types updated:\n\n';
@@ -239,24 +257,29 @@ export const setupPreferencesCommands = (bot: Telegraf<BotContext>): void => {
 
 async function showPreferencesMenu(ctx: BotContext) {
   try {
-    if (!ctx.userId) {
+    if (!ctx.userId || !ctx.telegramId) {
       await ctx.reply('❌ User not found.');
       return;
     }
 
+    const user = await UserModel.findByTelegramId(ctx.telegramId);
     const preferences = await UserPreferencesModel.findByUserId(ctx.userId);
     
     let message = '*🔧 Notification Preferences*\n\n';
     
+    // Show geography
+    message += `*Geography:*\n`;
+    message += `• Region: ${user?.geography || 'Not set'}\n\n`;
+    
     if (preferences) {
       message += `*Types:*\n`;
-      message += `• Bounties: ${preferences.notify_bounties ? '✅' : '❌'}\n`;
-      message += `• Projects: ${preferences.notify_projects ? '✅' : '❌'}\n\n`;
+      message += `• Bounties: ${preferences.notifyBounties ? '✅' : '❌'}\n`;
+      message += `• Projects: ${preferences.notifyProjects ? '✅' : '❌'}\n\n`;
       
       message += `*USD Filter:*\n`;
-      if (preferences.min_usd_value || preferences.max_usd_value) {
-        const min = preferences.min_usd_value ? `$${preferences.min_usd_value}` : 'No min';
-        const max = preferences.max_usd_value ? `$${preferences.max_usd_value}` : 'No max';
+      if (preferences.minUsdValue || preferences.maxUsdValue) {
+        const min = preferences.minUsdValue ? `$${preferences.minUsdValue}` : 'No min';
+        const max = preferences.maxUsdValue ? `$${preferences.maxUsdValue}` : 'No max';
         message += `• Range: ${min} - ${max}\n\n`;
       } else {
         message += `• No USD filters set\n\n`;
@@ -276,7 +299,7 @@ async function showPreferencesMenu(ctx: BotContext) {
     message += '• `/setusd` - Set USD value filter\n';
     message += '• `/settype` - Choose bounties/projects\n';
     message += '• `/setskills` - Set skills filter\n';
-    message += '• `/setgeo` - Set geography\n';
+    message += '• `/setgeo` - Change geography\n';
 
     await ctx.reply(message, { parse_mode: 'Markdown' });
   } catch (error) {

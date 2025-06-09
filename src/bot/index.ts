@@ -11,7 +11,6 @@ export interface BotContext extends Context {
 
 export const createBot = (): Telegraf<BotContext> => {
   const bot = new Telegraf<BotContext>(config.telegram.botToken);
-
   setupMiddleware(bot);
   setupCommands(bot);
 

@@ -24,42 +24,41 @@ describe('NotificationFilterService', () => {
 
   describe('filterListingsForUser', () => {
     const mockUser: User = {
-      id: 1,
-      telegram_id: 123456789,
-      telegram_username: 'testuser',
-      earn_user_id: 'earn-123',
+      id: '1',
+      telegramId: '123456789',
+      earnUserId: 'earn-123',
       geography: 'India',
-      created_at: new Date(),
-      updated_at: new Date(),
-      is_active: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      isActive: true,
     };
 
     const mockPreferences: UserPreferences = {
-      id: 1,
-      user_id: 1,
-      min_usd_value: 100,
-      max_usd_value: 5000,
-      notify_bounties: true,
-      notify_projects: false,
+      id: '1',
+      userId: '1',
+      minUsdValue: 100,
+      maxUsdValue: 5000,
+      notifyBounties: true,
+      notifyProjects: false,
       skills: ['react', 'typescript'],
-      created_at: new Date(),
-      updated_at: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
     const mockListing: Listing = {
       id: 'test-listing-1',
       title: 'Test Bounty',
-      sponsor_name: 'Test Sponsor',
+      sponsorName: 'Test Sponsor',
       type: 'bounty',
-      reward_token: 'USDC',
-      reward_amount: 1000,
-      reward_usd_value: 1000,
+      rewardToken: 'USDC',
+      rewardAmount: 1000,
+      usdValue: 1000,
       deadline: new Date(),
       geography: ['India', 'Global'],
-      required_skills: ['react'],
+      skills: ['react'],
       url: 'https://earn.superteam.fun/test',
-      published_at: new Date(),
-      created_at: new Date(),
+      publishedAt: new Date(),
+      createdAt: new Date(),
     };
 
     it('should filter listings based on listing type preference', async () => {
@@ -75,7 +74,7 @@ describe('NotificationFilterService', () => {
     });
 
     it('should filter listings based on USD value', async () => {
-      const expensiveListing = { ...mockListing, reward_usd_value: 10000 };
+      const expensiveListing = { ...mockListing, usdValue: 10000 };
       
       const filteredListings = await filterService.filterListingsForUser(
         mockUser,
@@ -87,7 +86,7 @@ describe('NotificationFilterService', () => {
     });
 
     it('should filter listings based on skills', async () => {
-      const skillMismatchListing = { ...mockListing, required_skills: ['python', 'django'] };
+      const skillMismatchListing = { ...mockListing, skills: ['python', 'django'] };
       
       const filteredListings = await filterService.filterListingsForUser(
         mockUser,
@@ -138,10 +137,10 @@ describe('NotificationFilterService', () => {
     it('should handle variable compensation listings', async () => {
       const variableListing = {
         ...mockListing,
-        is_variable_comp: true,
-        min_reward_usd: 200,
-        max_reward_usd: 2000,
-        reward_usd_value: undefined,
+        isVariableComp: true,
+        minRewardUsd: 200,
+        maxRewardUsd: 2000,
+        usdValue: undefined,
       };
       
       const filteredListings = await filterService.filterListingsForUser(

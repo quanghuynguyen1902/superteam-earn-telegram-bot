@@ -1,3 +1,31 @@
+export enum Region {
+  GLOBAL = 'GLOBAL',
+  INDIA = 'INDIA',
+  VIETNAM = 'VIETNAM',
+  GERMANY = 'GERMANY',
+  TURKEY = 'TURKEY',
+  MEXICO = 'MEXICO',
+  UK = 'UK',
+  UAE = 'UAE',
+  NIGERIA = 'NIGERIA',
+  ISRAEL = 'ISRAEL',
+  BRAZIL = 'BRAZIL',
+  MALAYSIA = 'MALAYSIA',
+  BALKAN = 'BALKAN',
+  PHILIPPINES = 'PHILIPPINES',
+  JAPAN = 'JAPAN',
+  FRANCE = 'FRANCE',
+  CANADA = 'CANADA',
+  SINGAPORE = 'SINGAPORE',
+  POLAND = 'POLAND',
+  KOREA = 'KOREA',
+  IRELAND = 'IRELAND',
+  UKRAINE = 'UKRAINE',
+  ARGENTINA = 'ARGENTINA',
+  USA = 'USA',
+  SPAIN = 'SPAIN'
+}
+
 export interface User {
   id: string;
   telegramId: string;

@@ -6,25 +6,38 @@ import { logger } from '../utils/logger';
 export const setupMiddleware = (bot: Telegraf<BotContext>): void => {
   // User authentication middleware
   bot.use(async (ctx, next) => {
+    logger.debug('Middleware triggered', { 
+      from: ctx.from,
+      updateType: ctx.updateType,
+      message: (ctx.message as any)?.text 
+    });
+
     if (!ctx.from) {
       return next();
     }
 
     try {
       const telegramId = ctx.from.id;
+      logger.debug('Processing user', { telegramId });
 
       // Check if user exists
       let user = await UserModel.findByTelegramId(telegramId);
+      logger.debug('User lookup result', { found: !!user, user });
 
       if (!user) {
         // Create new user
+        logger.info('Creating new user', { telegramId });
         user = await UserModel.create(telegramId);
-        logger.info('New user created', { telegramId });
+        logger.info('New user created', { telegramId, userId: user.id });
+        
+        // Mark that user needs to set geography
+        ctx.state = { ...ctx.state, needsGeography: true };
       }
 
       // Attach user info to context
       ctx.userId = user.id;
       ctx.telegramId = telegramId;
+      logger.debug('Context updated', { userId: ctx.userId, telegramId: ctx.telegramId });
     } catch (error) {
       logger.error('Middleware error', error);
     }

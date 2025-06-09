@@ -8,7 +8,7 @@ export const config = {
   },
   app: {
     nodeEnv: process.env.NODE_ENV || 'development',
-    logLevel: process.env.LOG_LEVEL || 'info',
+    logLevel: process.env.LOG_LEVEL || 'debug',
   },
   notifications: {
     delayHours: parseInt(process.env.NOTIFICATION_DELAY_HOURS || '12', 10),

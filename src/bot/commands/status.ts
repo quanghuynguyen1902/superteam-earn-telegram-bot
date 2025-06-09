@@ -21,16 +21,17 @@ export const setupStatusCommand = (bot: Telegraf<BotContext>): void => {
       message += `*Account:*\n`;
       message += `• User ID: \`${ctx.userId}\`\n`;
       message += `• Telegram ID: \`${ctx.telegramId}\`\n`;
-      message += `• Status: ${user?.is_active ? '✅ Active' : '❌ Inactive'}\n\n`;
+      message += `• Geography: ${user?.geography || 'Not set'}\n`;
+      message += `• Status: ${user?.isActive ? '✅ Active' : '❌ Inactive'}\n\n`;
       
       if (preferences) {
         message += `*Preferences:*\n`;
-        message += `• Bounties: ${preferences.notify_bounties ? '✅' : '❌'}\n`;
-        message += `• Projects: ${preferences.notify_projects ? '✅' : '❌'}\n`;
+        message += `• Bounties: ${preferences.notifyBounties ? '✅' : '❌'}\n`;
+        message += `• Projects: ${preferences.notifyProjects ? '✅' : '❌'}\n`;
         
-        if (preferences.min_usd_value || preferences.max_usd_value) {
-          const min = preferences.min_usd_value ? `$${preferences.min_usd_value}` : 'No min';
-          const max = preferences.max_usd_value ? `$${preferences.max_usd_value}` : 'No max';
+        if (preferences.minUsdValue || preferences.maxUsdValue) {
+          const min = preferences.minUsdValue ? `$${preferences.minUsdValue}` : 'No min';
+          const max = preferences.maxUsdValue ? `$${preferences.maxUsdValue}` : 'No max';
           message += `• USD Range: ${min} - ${max}\n`;
         } else {
           message += `• USD Filter: None\n`;

@@ -1,4 +1,4 @@
-import { query } from '../index';
+import { botDb } from '../index';
 import { Notification } from '../../types';
 
 export class NotificationModel {
@@ -7,16 +7,16 @@ export class NotificationModel {
     listingId: string
   ): Promise<{ id: string } | null> {
     try {
-      const [result] = await query<{ id: string }>(
-        `INSERT INTO notification_log (user_id, listing_id, sent_at)
-         VALUES ($1, $2, NOW())
-         RETURNING id`,
-        [userId, listingId]
-      );
-      return result || null;
+      const result = await botDb.notificationLog.create({
+        data: {
+          userId,
+          listingId
+        }
+      });
+      return { id: result.id };
     } catch (error: any) {
       // Handle duplicate key constraint (user already notified about this listing)
-      if (error.code === '23505') {
+      if (error.code === 'P2002') {
         return null;
       }
       throw error;
@@ -27,31 +27,29 @@ export class NotificationModel {
     userId: string,
     listingId: string
   ): Promise<boolean> {
-    const [result] = await query<{ count: string }>(
-      'SELECT COUNT(*) as count FROM notification_log WHERE user_id = $1 AND listing_id = $2',
-      [userId, listingId]
-    );
-    return parseInt(result?.count || '0') > 0;
+    const count = await botDb.notificationLog.count({
+      where: {
+        userId,
+        listingId
+      }
+    });
+    return count > 0;
   }
 
   static async getNotificationCount(userId: string): Promise<number> {
-    const [result] = await query<{ count: string }>(
-      'SELECT COUNT(*) as count FROM notification_log WHERE user_id = $1',
-      [userId]
-    );
-    return parseInt(result?.count || '0');
+    return botDb.notificationLog.count({
+      where: { userId }
+    });
   }
 
   static async getRecentNotifications(
     userId: string,
     limit: number = 10
   ): Promise<Notification[]> {
-    return query<Notification>(
-      `SELECT * FROM notification_log 
-       WHERE user_id = $1 
-       ORDER BY sent_at DESC 
-       LIMIT $2`,
-      [userId, limit]
-    );
+    return botDb.notificationLog.findMany({
+      where: { userId },
+      orderBy: { sentAt: 'desc' },
+      take: limit
+    });
   }
 }

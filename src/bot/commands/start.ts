@@ -1,11 +1,23 @@
-import { Telegraf } from 'telegraf';
+import { Telegraf, Markup } from 'telegraf';
 import { BotContext } from '../index';
-import { UserPreferencesModel } from '../../db/models/user';
+import { UserModel, UserPreferencesModel } from '../../db/models/user';
 import { logger } from '../../utils/logger';
+import { Region } from '../../types';
 
 export const setupStartCommand = (bot: Telegraf<BotContext>): void => {
   bot.command('start', async (ctx) => {
     try {
+      // Check if user has geography set
+      if (ctx.telegramId) {
+        const user = await UserModel.findByTelegramId(ctx.telegramId);
+        
+        if (user && !user.geography) {
+          // User exists but hasn't set geography
+          await showGeographySelection(ctx);
+          return;
+        }
+      }
+
       const welcomeMessage = `
 🚀 *Welcome to Superteam Earn Notification Bot!*
 
@@ -23,7 +35,7 @@ I'll help you stay updated with the latest bounties and projects on Superteam Ea
 2. Use /help to see all available commands
 3. Sit back and receive personalized notifications!
 
-_Notifications are sent 12 hours after a listing is published._
+*Notifications are sent 12 hours after a listing is published.*
       `;
 
       await ctx.replyWithMarkdownV2(escapeMarkdown(welcomeMessage));
@@ -33,8 +45,8 @@ _Notifications are sent 12 hours after a listing is published._
         const preferences = await UserPreferencesModel.findByUserId(ctx.userId);
         if (!preferences) {
           await UserPreferencesModel.upsert(ctx.userId, {
-            notify_bounties: true,
-            notify_projects: true,
+            notifyBounties: true,
+            notifyProjects: true,
             skills: [],
           });
         }
@@ -46,7 +58,70 @@ _Notifications are sent 12 hours after a listing is published._
       await ctx.reply('Welcome! An error occurred setting up your account. Please try again.');
     }
   });
+
+  // Handle geography selection callbacks
+  bot.action(/^geo_/, async (ctx) => {
+    const region = (ctx.callbackQuery as any).data.replace('geo_', '');
+    
+    if (!ctx.telegramId) {
+      await ctx.answerCbQuery('❌ User not found.');
+      return;
+    }
+
+    try {
+      await UserModel.updateGeography(ctx.telegramId, region);
+      await ctx.editMessageText(`✅ Your region has been set to: ${region}\n\nYou'll now receive notifications for opportunities in ${region} and global listings.`);
+      await ctx.answerCbQuery();
+      
+      // Show welcome message after geography is set
+      const welcomeMessage = `
+🎉 *Setup Complete!*
+
+Your account is now ready. Here's how to get started:
+
+*Available Commands:*
+• /preferences - View and manage all settings
+• /setusd - Set USD value filters
+• /settype - Choose bounties, projects, or both
+• /setskills - Set your skills
+• /status - Check your settings and stats
+• /help - Show all commands
+
+You'll start receiving personalized notifications for new opportunities that match your profile!
+      `;
+      
+      await ctx.replyWithMarkdownV2(escapeMarkdown(welcomeMessage));
+    } catch (error) {
+      logger.error('Error setting geography', error);
+      await ctx.answerCbQuery('❌ Failed to set region. Please try again.');
+    }
+  });
 };
+
+async function showGeographySelection(ctx: BotContext) {
+  const regions = Object.values(Region);
+  const buttons = [];
+  
+  // Create rows of 3 buttons each
+  for (let i = 0; i < regions.length; i += 3) {
+    const row = [];
+    for (let j = 0; j < 3 && i + j < regions.length; j++) {
+      const region = regions[i + j];
+      row.push(Markup.button.callback(region, `geo_${region}`));
+    }
+    buttons.push(row);
+  }
+
+  const keyboard = Markup.inlineKeyboard(buttons);
+
+  await ctx.reply(
+    `🌍 *Welcome! Please select your region:*\n\nThis helps us show you relevant opportunities in your area plus all global listings.`,
+    {
+      parse_mode: 'Markdown',
+      ...keyboard
+    }
+  );
+}
 
 const escapeMarkdown = (text: string): string => {
   return text.replace(/([_*[\]()~`>#+\-=|{}.!])/g, '\\$1');

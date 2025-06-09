@@ -1,54 +1,59 @@
-import { query } from '../index';
+import { botDb } from '../index';
 import { User, UserPreferences } from '../../types';
+import { logger } from '../../utils/logger';
 
 export class UserModel {
   static async create(telegramId: number): Promise<User> {
-    const [user] = await query<User>(
-      `INSERT INTO users (telegram_id) 
-       VALUES ($1) 
-       ON CONFLICT (telegram_id) 
-       DO UPDATE SET is_active = true, updated_at = NOW()
-       RETURNING *`,
-      [telegramId]
-    );
-    return user;
+    try {
+      const user = await botDb.user.upsert({
+        where: { telegramId: telegramId.toString() },
+        update: { isActive: true },
+        create: { telegramId: telegramId.toString() }
+      });
+      logger.info('User created in database', { user });
+      return user;
+    } catch (error) {
+      logger.error('Failed to create user in database', { telegramId, error });
+      throw error;
+    }
   }
 
   static async findByTelegramId(telegramId: number): Promise<User | null> {
-    const [user] = await query<User>(
-      'SELECT * FROM users WHERE telegram_id = $1',
-      [telegramId]
-    );
-    return user || null;
+    const user = await botDb.user.findUnique({
+      where: { telegramId: telegramId.toString() },
+      include: { preferences: true }
+    });
+    return user;
   }
 
   static async updateEarnUserId(telegramId: number, earnUserId: string): Promise<User | null> {
-    const [user] = await query<User>(
-      'UPDATE users SET earn_user_id = $1, updated_at = NOW() WHERE telegram_id = $2 RETURNING *',
-      [earnUserId, telegramId]
-    );
-    return user || null;
+    const user = await botDb.user.update({
+      where: { telegramId: telegramId.toString() },
+      data: { earnUserId }
+    });
+    return user;
   }
 
   static async updateGeography(telegramId: number, geography: string): Promise<User | null> {
-    const [user] = await query<User>(
-      'UPDATE users SET geography = $1, updated_at = NOW() WHERE telegram_id = $2 RETURNING *',
-      [geography, telegramId]
-    );
-    return user || null;
+    const user = await botDb.user.update({
+      where: { telegramId: telegramId.toString() },
+      data: { geography }
+    });
+    return user;
   }
 
   static async setActive(telegramId: number, isActive: boolean): Promise<void> {
-    await query(
-      'UPDATE users SET is_active = $1, updated_at = NOW() WHERE telegram_id = $2',
-      [isActive, telegramId]
-    );
+    await botDb.user.update({
+      where: { telegramId: telegramId.toString() },
+      data: { isActive }
+    });
   }
 
   static async getAllActive(): Promise<User[]> {
-    return query<User>(
-      'SELECT * FROM users WHERE is_active = true'
-    );
+    return botDb.user.findMany({
+      where: { isActive: true },
+      include: { preferences: true }
+    });
   }
 }
 
@@ -58,36 +63,38 @@ export class UserPreferencesModel {
     preferences: Partial<UserPreferences>
   ): Promise<UserPreferences> {
     const {
-      min_usd_value,
-      max_usd_value,
-      notify_bounties = true,
-      notify_projects = true,
+      minUsdValue,
+      maxUsdValue,
+      notifyBounties = true,
+      notifyProjects = true,
       skills = []
     } = preferences;
 
-    const [result] = await query<UserPreferences>(
-      `INSERT INTO user_preferences 
-       (user_id, min_usd_value, max_usd_value, notify_bounties, notify_projects, skills)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       ON CONFLICT (user_id)
-       DO UPDATE SET 
-         min_usd_value = EXCLUDED.min_usd_value,
-         max_usd_value = EXCLUDED.max_usd_value,
-         notify_bounties = EXCLUDED.notify_bounties,
-         notify_projects = EXCLUDED.notify_projects,
-         skills = EXCLUDED.skills,
-         updated_at = NOW()
-       RETURNING *`,
-      [userId, min_usd_value, max_usd_value, notify_bounties, notify_projects, skills]
-    );
+    const result = await botDb.userPreferences.upsert({
+      where: { userId },
+      update: {
+        minUsdValue,
+        maxUsdValue,
+        notifyBounties,
+        notifyProjects,
+        skills
+      },
+      create: {
+        userId,
+        minUsdValue,
+        maxUsdValue,
+        notifyBounties,
+        notifyProjects,
+        skills
+      }
+    });
     return result;
   }
 
   static async findByUserId(userId: string): Promise<UserPreferences | null> {
-    const [preferences] = await query<UserPreferences>(
-      'SELECT * FROM user_preferences WHERE user_id = $1',
-      [userId]
-    );
-    return preferences || null;
+    const preferences = await botDb.userPreferences.findUnique({
+      where: { userId }
+    });
+    return preferences;
   }
 }

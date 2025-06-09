@@ -135,11 +135,6 @@ A Telegram bot that provides personalized notifications for new bounties, projec
 
 ## API Endpoints
 
-### Webhooks
-- `POST /webhook/earn-listing` - Handle new listing events
-- `POST /webhook/earn-user` - Handle user update events
-- `POST /webhook/test` - Test webhook endpoint
-
 ### Health Check
 - `GET /health` - Application health status
 
@@ -362,7 +357,6 @@ BotCommands
 
 ## Security
 
-- **Webhook Verification**: HMAC signature validation
 - **Rate Limiting**: Protection against spam and abuse
 - **Environment Variables**: Sensitive data stored securely
 - **Database Isolation**: Separate database for bot operations
