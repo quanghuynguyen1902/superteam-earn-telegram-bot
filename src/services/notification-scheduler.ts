@@ -23,7 +23,7 @@ export class NotificationScheduler {
 
   start(): void {
     // Run every 5 minutes to check for listings that need notifications
-    this.cronJob = cron.schedule('*/5 * * * *', async () => {
+    this.cronJob = cron.schedule('*/1 * * * *', async () => {
       await this.checkAndSendNotifications();
     });
 
@@ -85,7 +85,7 @@ export class NotificationScheduler {
 
     try {
       // Transform the listing based on its type
-      const listing = earnListing.type === 'grant' 
+      const listing = earnListing.type === 'grant'
         ? this.earnDb.transformGrantToListing(earnListing)
         : this.earnDb.transformBountyToListing(earnListing);
 
@@ -140,7 +140,7 @@ export class NotificationScheduler {
   async triggerNotificationsForListing(listingId: string): Promise<void> {
     try {
       // Try to find as bounty first
-      let earnListing = await this.earnDb.getListingsForNotification(0).then(listings => 
+      let earnListing = await this.earnDb.getListingsForNotification(0).then(listings =>
         listings.find(l => l.id === listingId)
       );
 
@@ -178,7 +178,7 @@ export class NotificationScheduler {
       });
 
       const totalNotifications = await botDb.notificationLog.count();
-      
+
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const notificationsToday = await botDb.notificationLog.count({

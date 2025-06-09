@@ -19,9 +19,9 @@ export class NotificationSenderService {
   ): Promise<boolean> {
     try {
       const message = this.formatter.formatNotification(listing);
-      
+
       await this.bot.telegram.sendMessage(telegramId, message, {
-        parse_mode: 'Markdown',
+        parse_mode: 'MarkdownV2',
         link_preview_options: { is_disabled: false },
       });
 
@@ -45,9 +45,9 @@ export class NotificationSenderService {
   ): Promise<boolean> {
     try {
       const message = this.formatter.formatBatchSummary(count);
-      
+
       await this.bot.telegram.sendMessage(telegramId, message, {
-        parse_mode: 'Markdown',
+        parse_mode: 'MarkdownV2',
       });
 
       return true;
@@ -62,7 +62,7 @@ export class NotificationSenderService {
   ): Promise<boolean> {
     try {
       const message = this.formatter.formatErrorMessage();
-      
+
       await this.bot.telegram.sendMessage(telegramId, message, {
         parse_mode: 'Markdown',
       });
@@ -96,12 +96,12 @@ export class NotificationSenderService {
       };
 
       const message = this.formatter.formatNotification(testListing);
-      
+
       await this.bot.telegram.sendMessage(
         telegramId,
         '🧪 *Test Notification*\n\n' + message,
         {
-          parse_mode: 'Markdown',
+          parse_mode: 'MarkdownV2',
           link_preview_options: { is_disabled: false },
         }
       );
@@ -123,10 +123,10 @@ export class NotificationSenderService {
 
     // Process in chunks to respect rate limits
     const chunkSize = 30; // Telegram allows 30 messages per second
-    
+
     for (let i = 0; i < notifications.length; i += chunkSize) {
       const chunk = notifications.slice(i, i + chunkSize);
-      
+
       const results = await Promise.allSettled(
         chunk.map(({ telegramId, listing }) =>
           this.sendNotification(telegramId, listing)

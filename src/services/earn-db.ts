@@ -173,31 +173,10 @@ export class EarnDatabaseService {
     }
   }
 
-  // Get user by email (for linking bot users with earn users)
-  async getUserByEmail(email: string): Promise<any | null> {
-    try {
-      return await earnDb.user.findUnique({
-        where: { email },
-        select: {
-          id: true,
-          email: true,
-          username: true,
-          firstName: true,
-          lastName: true,
-          location: true,
-          skills: true,
-        },
-      });
-    } catch (error) {
-      logger.error('Failed to get user by email', error);
-      return null;
-    }
-  }
-
   // Transform Earn bounty to our Listing format
   transformBountyToListing(bounty: any): Listing {
     // Determine reward amount and USD value
-    let rewardUsdValue = bounty.usdValue || bounty.rewardAmount || 0;
+    let rewardUsdValue = bounty.usdValue || 0;
     let isVariableComp = bounty.compensationType === 'variable';
     let minRewardUsd = bounty.minRewardAsk;
     let maxRewardUsd = bounty.maxRewardAsk;

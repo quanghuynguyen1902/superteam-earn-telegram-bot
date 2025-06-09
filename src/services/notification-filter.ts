@@ -112,7 +112,7 @@ export class NotificationFilterService {
         user.earnUserId,
         listing.id
       );
-      
+
       if (!isEligible) {
         logger.debug(`Listing ${listing.id} filtered out: user not eligible on Earn platform`);
         return false;
@@ -138,27 +138,19 @@ export class NotificationFilterService {
 
   private matchesUsdFilter(preferences: any, listing: Listing): boolean {
     // Get the effective USD value for comparison
-    let effectiveValue: number;
-    
-    if (listing.is_variable_comp || listing.min_reward_usd !== undefined) {
-      // For variable or range compensation, use the minimum value
-      effectiveValue = listing.min_reward_usd || 0;
-    } else {
-      // For fixed compensation
-      effectiveValue = listing.reward_usd_value || 0;
-    }
+    let effectiveValue = listing.reward_usd_value ||0;
 
     // Check minimum USD filter
-    if (preferences.minUsdValue !== null && 
+    if (preferences.minUsdValue !== null &&
         preferences.minUsdValue !== undefined &&
         effectiveValue < preferences.minUsdValue) {
       return false;
     }
 
     // Check maximum USD filter (use max_reward_usd if available)
-    if (preferences.maxUsdValue !== null && 
+    if (preferences.maxUsdValue !== null &&
         preferences.maxUsdValue !== undefined) {
-      const maxValue = listing.max_reward_usd || effectiveValue;
+      const maxValue = effectiveValue;
       if (maxValue > preferences.maxUsdValue) {
         return false;
       }
@@ -182,8 +174,8 @@ export class NotificationFilterService {
     const userSkillsLower = preferences.skills.map((s: string) => s.toLowerCase().trim());
     const listingSkillsLower = listing.required_skills.map(s => s.toLowerCase().trim());
 
-    return userSkillsLower.some((userSkill: string) => 
-      listingSkillsLower.some(listingSkill => 
+    return userSkillsLower.some((userSkill: string) =>
+      listingSkillsLower.some(listingSkill =>
         listingSkill.includes(userSkill) || userSkill.includes(listingSkill)
       )
     );
@@ -196,8 +188,8 @@ export class NotificationFilterService {
     }
 
     // Check if listing is explicitly global
-    if (listing.geography.includes('GLOBAL') || 
-        listing.geography.includes('Global') || 
+    if (listing.geography.includes('GLOBAL') ||
+        listing.geography.includes('Global') ||
         listing.geography.includes('global') ||
         listing.geography.includes('Worldwide')) {
       return true;
@@ -210,7 +202,7 @@ export class NotificationFilterService {
 
     // Check if user's geography matches any of the listing's geographies
     const userGeoLower = user.geography.toLowerCase();
-    return listing.geography.some(geo => 
+    return listing.geography.some(geo =>
       geo.toLowerCase() === userGeoLower ||
       geo.toLowerCase().includes(userGeoLower) ||
       userGeoLower.includes(geo.toLowerCase())

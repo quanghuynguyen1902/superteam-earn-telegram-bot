@@ -1,19 +1,19 @@
-import { Listing, NotificationContent } from '../types';
+import { Listing, NotificationContent } from "../types";
 
 export class NotificationFormatterService {
   formatNotification(listing: Listing): string {
     const content = this.prepareNotificationContent(listing);
-    
+
     return `
-🚀 *New ${content.type === 'bounty' ? 'Bounty' : 'Project'} Alert!*
+🚀 *New ${content.type === "bounty" ? "Bounty" : content.type === "grant" ? "Grant" : "Project"} Alert\\!*
 
 *${this.escapeMarkdown(content.title)}*
 by ${this.escapeMarkdown(content.sponsor)}
 
-💰 *Reward:* ${content.reward}
-⏰ *Deadline:* ${content.deadline}
+💰 *Reward:* ${this.escapeMarkdown(content.reward)}
+⏰ *Deadline:* ${this.escapeMarkdown(content.deadline)}
 
-${content.url}
+${this.escapeMarkdown(content.url)}
 `.trim();
   }
 
@@ -30,10 +30,15 @@ ${content.url}
 
   private formatReward(listing: Listing): string {
     if (listing.is_variable_comp) {
-      return 'Variable Comp';
+      return "Variable Comp";
     }
 
-    if (listing.min_reward_usd !== undefined && listing.max_reward_usd !== undefined) {
+    if (
+      listing.min_reward_usd !== undefined &&
+      listing.min_reward_usd !== null &&
+      listing.max_reward_usd !== null &&
+      listing.max_reward_usd !== undefined
+    ) {
       // Range compensation
       return `$${this.formatNumber(listing.min_reward_usd)} - $${this.formatNumber(listing.max_reward_usd)} USD`;
     }
@@ -41,11 +46,11 @@ ${content.url}
     if (listing.reward_usd_value) {
       // Fixed compensation with USD value
       let reward = `$${this.formatNumber(listing.reward_usd_value)} USD`;
-      
+
       if (listing.reward_token && listing.reward_amount) {
         reward = `${this.formatNumber(listing.reward_amount)} ${listing.reward_token} (~${reward})`;
       }
-      
+
       return reward;
     }
 
@@ -54,47 +59,58 @@ ${content.url}
       return `${this.formatNumber(listing.reward_amount)} ${listing.reward_token}`;
     }
 
-    return 'See listing for details';
+    return "See listing for details";
   }
 
-  private formatDeadline(deadline: Date): string {
+  private formatDeadline(deadline: Date | null): string {
+    if (!deadline) {
+      return "No deadline";
+    }
+
     const now = new Date();
     const daysUntilDeadline = Math.floor(
-      (deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+      (deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
     );
 
     if (daysUntilDeadline < 0) {
-      return 'Expired';
+      return "Expired";
     } else if (daysUntilDeadline === 0) {
-      return 'Today';
+      return "Today";
     } else if (daysUntilDeadline === 1) {
-      return 'Tomorrow';
+      return "Tomorrow";
     } else if (daysUntilDeadline <= 7) {
       return `${daysUntilDeadline} days`;
     } else {
-      return deadline.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: deadline.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
+      return deadline.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year:
+          deadline.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
       });
     }
   }
 
   private addUTMTracking(url: string): string {
-    const separator = url.includes('?') ? '&' : '?';
+    const separator = url.includes("?") ? "&" : "?";
     return `${url}${separator}utm_source=telegrambot`;
   }
 
-  private formatNumber(num: number): string {
-    return num.toLocaleString('en-US', {
+  private formatNumber(num: number | null | undefined): string {
+    if (num === null || num === undefined) {
+      return "0";
+    }
+    return num.toLocaleString("en-US", {
       maximumFractionDigits: 2,
       minimumFractionDigits: 0,
     });
   }
 
   private escapeMarkdown(text: string): string {
-    // Escape special characters for Telegram Markdown
-    return text.replace(/([_*[\]()~`>#+\-=|{}.!])/g, '\\$1');
+    // Escape special characters for Telegram MarkdownV2
+    // Order matters: escape backslash first
+    return text
+      .replace(/\\/g, "\\\\")
+      .replace(/([_*\[\]()~`>#+\-=|{}.!])/g, "\\$1");
   }
 
   // Format a batch summary for multiple notifications
@@ -102,7 +118,7 @@ ${content.url}
     return `
 📊 *Notification Summary*
 
-You have ${count} new ${count === 1 ? 'opportunity' : 'opportunities'} matching your preferences!
+You have ${count} new ${count === 1 ? "opportunity" : "opportunities"} matching your preferences!
 Check them out above 👆
 `.trim();
   }

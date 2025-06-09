@@ -8,8 +8,9 @@ export const setupStartCommand = (bot: Telegraf<BotContext>): void => {
   bot.command('start', async (ctx) => {
     try {
       // Check if user has geography set
-      if (ctx.telegramId) {
-        const user = await UserModel.findByTelegramId(ctx.telegramId);
+      const telegramId = ctx.from?.id;
+      if (telegramId) {
+        const user = await UserModel.findByTelegramId(telegramId);
         
         if (user && !user.geography) {
           // User exists but hasn't set geography
@@ -19,9 +20,9 @@ export const setupStartCommand = (bot: Telegraf<BotContext>): void => {
       }
 
       const welcomeMessage = `
-🚀 *Welcome to Superteam Earn Notification Bot!*
+🚀 *Welcome to Superteam Earn Notification Bot\\!*
 
-I'll help you stay updated with the latest bounties and projects on Superteam Earn that match your profile and preferences.
+I'll help you stay updated with the latest bounties and projects on Superteam Earn that match your profile and preferences\\.
 
 *Here's what I can do:*
 • 📢 Notify you about new opportunities you're eligible for
@@ -31,14 +32,14 @@ I'll help you stay updated with the latest bounties and projects on Superteam Ea
 • 🌍 Match opportunities based on your geography
 
 *Quick Start:*
-1. Use /preferences to set up your notification filters
-2. Use /help to see all available commands
-3. Sit back and receive personalized notifications!
+1\\. Use /preferences to set up your notification filters
+2\\. Use /help to see all available commands
+3\\. Sit back and receive personalized notifications\\!
 
-*Notifications are sent 12 hours after a listing is published.*
+*Notifications are sent 12 hours after a listing is published\\.*
       `;
 
-      await ctx.replyWithMarkdownV2(escapeMarkdown(welcomeMessage));
+      await ctx.replyWithMarkdownV2(welcomeMessage);
 
       // Create default preferences if they don't exist
       if (ctx.userId) {
@@ -75,22 +76,22 @@ I'll help you stay updated with the latest bounties and projects on Superteam Ea
       
       // Show welcome message after geography is set
       const welcomeMessage = `
-🎉 *Setup Complete!*
+🎉 *Setup Complete\\!*
 
-Your account is now ready. Here's how to get started:
+Your account is now ready\\. Here's how to get started:
 
 *Available Commands:*
-• /preferences - View and manage all settings
-• /setusd - Set USD value filters
-• /settype - Choose bounties, projects, or both
-• /setskills - Set your skills
-• /status - Check your settings and stats
-• /help - Show all commands
+• /preferences \\- View and manage all settings
+• /setusd \\- Set USD value filters
+• /settype \\- Choose bounties, projects, or both
+• /setskills \\- Set your skills
+• /status \\- Check your settings and stats
+• /help \\- Show all commands
 
-You'll start receiving personalized notifications for new opportunities that match your profile!
+You'll start receiving personalized notifications for new opportunities that match your profile\\!
       `;
       
-      await ctx.replyWithMarkdownV2(escapeMarkdown(welcomeMessage));
+      await ctx.replyWithMarkdownV2(welcomeMessage);
     } catch (error) {
       logger.error('Error setting geography', error);
       await ctx.answerCbQuery('❌ Failed to set region. Please try again.');
@@ -115,14 +116,17 @@ async function showGeographySelection(ctx: BotContext) {
   const keyboard = Markup.inlineKeyboard(buttons);
 
   await ctx.reply(
-    `🌍 *Welcome! Please select your region:*\n\nThis helps us show you relevant opportunities in your area plus all global listings.`,
+    `🌍 *Welcome\\! Please select your region:*\n\nThis helps us show you relevant opportunities in your area plus all global listings\\.`,
     {
-      parse_mode: 'Markdown',
+      parse_mode: 'MarkdownV2',
       ...keyboard
     }
   );
 }
 
 const escapeMarkdown = (text: string): string => {
-  return text.replace(/([_*[\]()~`>#+\-=|{}.!])/g, '\\$1');
+  // Escape special characters for Telegram MarkdownV2
+  return text
+    .replace(/\\/g, '\\\\')
+    .replace(/([_*\[\]()~`>#+\-=|{}.!])/g, '\\$1');
 };

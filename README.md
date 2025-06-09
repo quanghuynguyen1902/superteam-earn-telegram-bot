@@ -4,7 +4,7 @@ A Telegram bot that provides personalized notifications for new bounties, projec
 
 ## Demo Video
 
-[Demo Video Placeholder - To be added]
+https://www.youtube.com/watch?v=k96zsb9BAA0
 
 ## Features
 
